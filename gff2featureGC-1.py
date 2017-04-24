@@ -1,153 +1,141 @@
 #! /usr/bin/env python3.6
 
-#Assignment 7
+import sys
 
-#Reading the watermelon.fsa file
-my_file=open("watermelon.fsa", 'r')
-my_dna=my_file.read()
+usage = sys.argv[0] + ": watermelon.fsa watermelon.gff"
 
-#total lenght of genome in watermelon.fsa file
-genome_length=len(my_dna)
+if len(sys.argv) < 3:
+    print(usage)
+    sys.exit("\nThis script requires both watermelon FSA file and a watermelon GFF file\n")
 
-#reading the watermelon.gff file
-my_file2=open("watermelon.gff", 'r')
+watermelon_gff = sys.argv[1]
+watermelon_fsa= sys.argv[2]
 
-#Using grep and cut command in terminal start and stop position of each feature were redirected to a separate text file which are used for further processing
-
-
-#exon length and GC content calculation
-exon_locations=open("exon.txt")
-coding_sequence=""
-for line in exon_locations:
-    positions=line.split('\t')
-    start=int(positions[0])
-    stop=int(positions[1])
-    exon=my_dna[start:stop]
-    coding_sequence=coding_sequence + exon
+#print(gff + "\n" + genome)
 
 
-length_coding=len(coding_sequence)
-
-#percentage of genome covered by exon
-percent_of_genome_exon=(length_coding/genome_length)*100
-
-#Calculation of GC content of exon
-gc_content_exon=((coding_sequence.count('G') + coding_sequence.count("C"))/length_coding)*100
+gff_file="watermelon.gff"
+fsa_file="watermelon.fsa"
 
 
-#intron length and GC content calculation
+#open the files 
+gff_in=open(gff_file,'r')
+fsa_in=open(fsa_file,'r')
 
-intron_locations=open("intron.txt")
-noncoding_sequence=""
-for line in intron_locations:
-    positions=line.split('\t')
-    start=int(positions[0])
-    stop=int(positions[1])
-    intron=my_dna[start:stop]
-    noncoding_sequence=noncoding_sequence + intron
+#Declare a variable
+genome=''
 
-# Calculation of GC content of intron
-gc_content_intron=((noncoding_sequence.count('G') + noncoding_sequence.count("C"))/len(noncoding_sequence))*100
+line_number=0
 
-length_noncoding=len(noncoding_sequence)
+for line in fsa_in:
+    #print(str(line_number) + ":" + line)
 
-# percentage of genome covered by introns
-percent_of_genome_intron=(length_noncoding/genome_length)*100
-
-
-#misc-feature length and GC content calculation
-
-misc_locations=open("misc_feature.txt")
-misc_sequence=""
-for line in misc_locations:
-    positions=line.split('\t')
-    start=int(positions[0])
-    stop=int(positions[1])
-    misc=my_dna[start:stop]
-    misc_sequence=misc_sequence + misc
-
-# Calculation of GC content in misc_feature sequence
-gc_content_misc=((misc_sequence.count('G') + misc_sequence.count("C"))/len(misc_sequence))*100
+    line=line.rstrip('\n')
+    
+    if line_number > 0:
+        genome+=line
+        
+    line_number+=1
 
 
-length_misc=len(misc_sequence)
+#did we get the genome correctly
+#print(len(genome))
 
-# percentage of genome covered by misc_feature
-percent_of_genome_misc=(length_misc/genome_length)*100
+#close the file fsa
+fsa_in.close()
 
 
-#rRNA length and GC content calculation
-
-rRNA_locations=open("rRNA.txt")
-rRNA_sequence=""
-for line in rRNA_locations:
-    positions=line.split('\t')
-    start=int(positions[0])
-    stop=int(positions[1])
-    rRNA=my_dna[start:stop]
-    rRNA_sequence=rRNA_sequence + rRNA
-
-#Calculation of GC content in rRNA
-gc_content_rRNA=((rRNA_sequence.count('G') + rRNA_sequence.count("C"))/len(rRNA_sequence))*100
-
-length_rRNA=len(rRNA_sequence)
-
-# percentage of genome covered by rRNA
-percent_of_genome_rRNA=(length_rRNA/genome_length)*100
+cds     = ''
+trna    = ''
+rrna    = ''
+intron  = ''
+misc    = ''
+repeats = ''
 
 
 
-#repeat region length and GC content calculation
+for line in gff_in:
+    line=line.rstrip('\n')
+    #types=line.split('type ')
+   # other_type=types[len(types)-1]
+   # print(other_type)
 
-repeat_locations=open("repeat.txt")
-repeat_sequence=""
-for line in repeat_locations:
-    positions=line.split('\t')
-    start=int(positions[0])
-    stop=int(positions[1])
-    repeat=my_dna[start:stop]
-    repeat_sequence=repeat_sequence + repeat
-
-
-#Calculation of GC content in repeat region
-gc_content_repeat=((repeat_sequence.count('G') + repeat_sequence.count("C"))/len(repeat_sequence))*100
+    fields=line.split('\t')
+    type=fields[2]
+    start=int(fields[3])
+    
+    end=int(fields[4])
+    #print(type, "\t", start,"\t", end)
 
 
-length_repeat=len(repeat_sequence)
+    #extract feature from the genome
 
-# percentage of genome covered by repeat region
-percent_of_genome_repeat=(length_repeat/genome_length)*100
+    fragment=genome[start-1:end]
 
+    if type=='CDS':
+        cds+=fragment
 
+    if type=='intron':
+        intron+=fragment
 
+    if type=='misc_feature':
+        misc+=fragment
 
-#tRNA length and GC content calculation
+    if type=='repeat_region':
+        repeats+=fragment
+    if type=='rRNA':
+        rrna+=fragment
+    if type=='tRNA':
+        trna+=fragment
 
-tRNA_locations=open("tRNA.txt")
-tRNA_sequence=""
-for line in tRNA_locations:
-    positions=line.split('\t')
-    start=int(positions[0])
-    stop=int(positions[1])
-    tRNA=my_dna[start:stop]
-    tRNA_sequence=tRNA_sequence + tRNA
+#just to make sure that first line is correct
 
-
-# Calculation of GC content in tRNA
-gc_content_tRNA=((tRNA_sequence.count('G') + tRNA_sequence.count("C"))/len(tRNA_sequence))*100
-
-
-length_tRNA=len(tRNA_sequence)
-
-# percentage of genome covered by rRNA
-percent_of_genome_tRNA=(length_tRNA/genome_length)*100
+gc_content_cds=((cds.count('G')+cds.count('C'))/len(cds))*100
+gc_content_intron=((intron.count('G')+intron.count('C'))/len(intron))*100
+gc_content_misc=((misc.count('G')+misc.count('C'))/len(misc))*100
+gc_content_repeats=((repeats.count('G')+repeats.count('C'))/len(repeats))*100
+gc_content_rrna=((rrna.count('G')+rrna.count('C'))/len(rrna))*100
+gc_content_trna=((trna.count('G')+trna.count('C'))/len(trna))*100
 
 
 
+# genome covered by each feature
+length_cds=len(cds)
+#print(length_cds)
+genome_cds=(length_cds/len(genome))*100
 
-print("exon ",length_coding,"(",round(percent_of_genome_exon, 2),"%)",round(gc_content_exon, 2))
-print("intron ",length_noncoding,"(",round(percent_of_genome_intron, 2),"%)",round(gc_content_intron, 2))
-print("misc_feature ",length_misc,"(",round(percent_of_genome_misc, 2),"%)",round(gc_content_misc, 2))
-print("rRNA ",length_rRNA,"(",round(percent_of_genome_rRNA, 2),"%)",round(gc_content_rRNA, 2))
-print("repeat_region ",length_repeat,"(",round(percent_of_genome_repeat, 2),"%)",round(gc_content_repeat, 2))
-print("tRNA ",length_tRNA,"(",round(percent_of_genome_tRNA, 2),"%)",round(gc_content_tRNA, 2))
+length_intron=len(intron)
+genome_intron=(length_intron/len(genome))*100
+
+length_misc=len(misc)
+genome_misc=(length_misc/len(genome))*100
+
+length_repeats=len(repeats)
+genome_repeats=(length_repeats/len(genome))*100
+
+length_rrna=len(rrna)
+genome_rrna=(length_rrna/len(genome))*100
+
+length_trna=len(trna)
+genome_trna=(length_trna/len(genome))*100
+    
+
+'''
+#I tried these codes and didn't get good alighment, so I switch to different styles
+print("exon \t %7d (%2.1f) \t %2.2f" % (length_cds,genome_cds,gc_content_cds))
+print("intron \t %7d (%2.1f) \t %2.2f" % (length_intron,genome_intron,gc_content_intron))
+print("misc_feature \t %7d (%2.1f) \t %2.2f" % (length_misc,genome_misc,gc_content_misc))
+print("rrna\t %7d (%2.1f) \t %2.2f" % (length_rrna,genome_rrna,gc_content_rrna))
+print("repeats_region\t %7d (%2.1f) \t %2.2f" % (length_repeats,genome_repeats,gc_content_repeats))
+print("trna\t %7d (%2.1f) \t %2.2f" % (length_trna,genome_trna,gc_content_trna))
+'''
+
+
+#printing the results
+for args in (('exon',length_cds,genome_cds,gc_content_cds), ('intron',length_intron,genome_intron,gc_content_intron),('misc_feature',length_misc,genome_misc,gc_content_misc),('rrna',length_rrna,genome_rrna,gc_content_rrna),('repeat_region',length_repeats,genome_repeats,gc_content_repeats),('trna',length_trna,genome_trna,gc_content_trna)):
+    print ('{0:<20} {1:<6}({2:<4.1f}%) \t {3:<.2f}'.format(*args))
+
+
+#close the GFF file
+gff_in.close()
+    
