@@ -2,6 +2,8 @@
 
 import sys
 
+#function goes at the begining. a function to clear up a DNA sequence
+
 usage = sys.argv[0] + ": watermelon.fsa watermelon.gff"
 
 if len(sys.argv) < 3:
@@ -21,6 +23,32 @@ fsa_file="watermelon.fsa"
 #open the files 
 gff_in=open(gff_file,'r')
 fsa_in=open(fsa_file,'r')
+
+
+
+def clean_seq(input_seq):
+    clean = input_seq.upper()
+    clean = clean.replace('N','')
+    return clean
+#clean variable is a private and is not accessible outside the function
+
+
+def nuc_freq(sequence,base,sig_digs=2):
+    #calculate the length of the sequence
+    length=len(sequence)
+
+    #count the number of this nucleotide
+
+    count_of_base=sequence.count(base)
+
+    # calculate the base frequency
+    freq_of_base=count_of_base/length
+    #return the frequencey and the lenght
+
+    return (length,round(freq_of_base, sig_digs))
+
+
+    #return()  #this will return the both variables
 
 #Declare a variable
 genome=''
@@ -72,8 +100,16 @@ for line in gff_in:
 
     fragment=genome[start-1:end]
 
+    fragment=clean_seq(fragment)
+    
+    #print (clean)
+
+    
+    #sys.exti()
+
     if type=='CDS':
         cds+=fragment
+        
 
     if type=='intron':
         intron+=fragment
@@ -88,7 +124,39 @@ for line in gff_in:
     if type=='tRNA':
         trna+=fragment
 
-#just to make sure that first line is correct
+
+
+
+            
+#loop over the 4 nucleotide
+        
+types=[cds,intron,misc,repeats,rrna,trna]
+
+#creating a dictionary to store keys and values
+
+dict={
+
+'exon':types[0],'intron':types[1],'misc_feature':types[2],'repeat_region':types[3],'rRNA':types[4],'tRNA':types[5]
+
+ }
+
+
+
+#Modification of assignement 7 to calculate nucleotide composition for each feature type
+
+print("length and nucleotide composition of each feature type")
+for feature_type, seq in dict.items():
+    for nucleotide in ('A','C','G','T'):
+        #calculate the nucleotide composition for each feature
+        (feature_length,feature_comp)=nuc_freq(seq,base=nucleotide,sig_digs=2)
+       
+        print(feature_type.ljust(20)+ str(feature_length)+"\t"+nucleotide+ " "+str(feature_comp))
+
+
+
+
+
+#Assignemnt 7 without modifications
 
 gc_content_cds=((cds.count('G')+cds.count('C'))/len(cds))*100
 gc_content_intron=((intron.count('G')+intron.count('C'))/len(intron))*100
@@ -131,7 +199,7 @@ print("trna\t %7d (%2.1f) \t %2.2f" % (length_trna,genome_trna,gc_content_trna))
 '''
 
 
-#printing the results
+#printing the results of assignment 7
 for args in (('exon',length_cds,genome_cds,gc_content_cds), ('intron',length_intron,genome_intron,gc_content_intron),('misc_feature',length_misc,genome_misc,gc_content_misc),('rrna',length_rrna,genome_rrna,gc_content_rrna),('repeat_region',length_repeats,genome_repeats,gc_content_repeats),('trna',length_trna,genome_trna,gc_content_trna)):
     print ('{0:<20} {1:<6}({2:<4.1f}%) \t {3:<.2f}'.format(*args))
 
