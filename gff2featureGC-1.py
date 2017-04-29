@@ -1,8 +1,51 @@
 #! /usr/bin/env python3.6
 
+
 import sys
+import collections
+
+
 
 #function goes at the begining. a function to clear up a DNA sequence
+
+def clean_seq(input_seq):
+    clean = input_seq.upper()
+    clean = clean.replace('N','')
+    return clean
+#clean variable is a private and is not accessible outside the function
+
+#Function to calculate lenght and composition of sequence
+def nuc_freq(sequence,base1,base2,sig_digs=2):
+    #calculate the length of the sequence
+    length=len(sequence)
+
+    #genome covered with the feature
+    genome_cover=(len(sequence)/len(genome))*100
+
+    #count the number of this nucleotide
+
+    count_of_base1=sequence.count(base1)
+
+    count_of_base2=sequence.count(base2)
+
+    # calculate the gc content
+    gc_content=((count_of_base1+count_of_base2)/length)*100
+
+    #return the frequencey and the lenght
+    return (length,genome_cover,round(gc_content, sig_digs))
+    #return()  #this will return the both variables
+
+#Function to generate complement sequence
+def reverse_compl(dna_seq):
+    replacement1=dna_seq.replace('A','t')
+    replacement2=replacement1.replace('T','a')
+    replacement3=replacement2.replace('C','g')
+    replacement4=replacement3.replace('G','c')
+    return (replacement4.upper())
+
+
+
+
 
 usage = sys.argv[0] + ": watermelon.fsa watermelon.gff"
 
@@ -16,6 +59,9 @@ watermelon_fsa= sys.argv[2]
 #print(gff + "\n" + genome)
 
 
+
+
+
 gff_file="watermelon.gff"
 fsa_file="watermelon.fsa"
 
@@ -26,34 +72,24 @@ fsa_in=open(fsa_file,'r')
 
 
 
-def clean_seq(input_seq):
-    clean = input_seq.upper()
-    clean = clean.replace('N','')
-    return clean
-#clean variable is a private and is not accessible outside the function
+#Creating dictionary
+    
+#key=feature type, value=concatenation of all sequences of that type-not useful for anything other than calculating AT/GC Content
+feature_sequences={}
 
+#key exon, value=sequence
+exon_sequences={}
 
-def nuc_freq(sequence,base,sig_digs=2):
-    #calculate the length of the sequence
-    length=len(sequence)
+#key is gene and value is concatenation of all exon sequences in a gene
+gene_sequences={}
 
-    #count the number of this nucleotide
-
-    count_of_base=sequence.count(base)
-
-    # calculate the base frequency
-    freq_of_base=count_of_base/length
-    #return the frequencey and the lenght
-
-    return (length,round(freq_of_base, sig_digs))
-
-
-    #return()  #this will return the both variables
 
 #Declare a variable
 genome=''
 
 line_number=0
+
+
 
 for line in fsa_in:
     #print(str(line_number) + ":" + line)
@@ -90,6 +126,9 @@ for line in gff_in:
 
     fields=line.split('\t')
     type=fields[2]
+    strand=fields[6]
+
+        #print(gene[0])
     start=int(fields[3])
     
     end=int(fields[4])
@@ -101,109 +140,59 @@ for line in gff_in:
     fragment=genome[start-1:end]
 
     fragment=clean_seq(fragment)
-    
-    #print (clean)
 
-    
-    #sys.exti()
+
+        
+    if type in feature_sequences:
+        feature_sequences[type] +=fragment
+    else:
+        feature_sequences[type]=fragment
 
     if type=='CDS':
-        cds+=fragment
+        gene_feature=fields[8]
+        gene1=gene_feature.split(';')
+        gene=gene1[0]
+        gene_sequence=genome[start-1:end]
+
+        if strand=='-':
+            #print("Before ")
+            complement_sequence=reverse_compl(gene_sequence)
+            exon_sequences[gene]=complement_sequence
+            #print("After ")
+        else:
+            exon_sequences[gene]=gene_sequence
         
-
-    if type=='intron':
-        intron+=fragment
-
-    if type=='misc_feature':
-        misc+=fragment
-
-    if type=='repeat_region':
-        repeats+=fragment
-    if type=='rRNA':
-        rrna+=fragment
-    if type=='tRNA':
-        trna+=fragment
-
-
-
-
-            
-#loop over the 4 nucleotide
-        
-types=[cds,intron,misc,repeats,rrna,trna]
-
-#creating a dictionary to store keys and values
-
-dict={
-
-'exon':types[0],'intron':types[1],'misc_feature':types[2],'repeat_region':types[3],'rRNA':types[4],'tRNA':types[5]
-
- }
-
-
-
-#Modification of assignement 7 to calculate nucleotide composition for each feature type
-
-print("length and nucleotide composition of each feature type")
-for feature_type, seq in dict.items():
-    for nucleotide in ('A','C','G','T'):
-        #calculate the nucleotide composition for each feature
-        (feature_length,feature_comp)=nuc_freq(seq,base=nucleotide,sig_digs=2)
-       
-        print(feature_type.ljust(20)+ str(feature_length)+"\t"+nucleotide+ " "+str(feature_comp))
-
-
-
-
-
-#Assignemnt 7 without modifications
-
-gc_content_cds=((cds.count('G')+cds.count('C'))/len(cds))*100
-gc_content_intron=((intron.count('G')+intron.count('C'))/len(intron))*100
-gc_content_misc=((misc.count('G')+misc.count('C'))/len(misc))*100
-gc_content_repeats=((repeats.count('G')+repeats.count('C'))/len(repeats))*100
-gc_content_rrna=((rrna.count('G')+rrna.count('C'))/len(rrna))*100
-gc_content_trna=((trna.count('G')+trna.count('C'))/len(trna))*100
-
-
-
-# genome covered by each feature
-length_cds=len(cds)
-#print(length_cds)
-genome_cds=(length_cds/len(genome))*100
-
-length_intron=len(intron)
-genome_intron=(length_intron/len(genome))*100
-
-length_misc=len(misc)
-genome_misc=(length_misc/len(genome))*100
-
-length_repeats=len(repeats)
-genome_repeats=(length_repeats/len(genome))*100
-
-length_rrna=len(rrna)
-genome_rrna=(length_rrna/len(genome))*100
-
-length_trna=len(trna)
-genome_trna=(length_trna/len(genome))*100
+    #print (clean)
+    #print(gene[0])
     
-
-'''
-#I tried these codes and didn't get good alighment, so I switch to different styles
-print("exon \t %7d (%2.1f) \t %2.2f" % (length_cds,genome_cds,gc_content_cds))
-print("intron \t %7d (%2.1f) \t %2.2f" % (length_intron,genome_intron,gc_content_intron))
-print("misc_feature \t %7d (%2.1f) \t %2.2f" % (length_misc,genome_misc,gc_content_misc))
-print("rrna\t %7d (%2.1f) \t %2.2f" % (length_rrna,genome_rrna,gc_content_rrna))
-print("repeats_region\t %7d (%2.1f) \t %2.2f" % (length_repeats,genome_repeats,gc_content_repeats))
-print("trna\t %7d (%2.1f) \t %2.2f" % (length_trna,genome_trna,gc_content_trna))
-'''
-
-
-#printing the results of assignment 7
-for args in (('exon',length_cds,genome_cds,gc_content_cds), ('intron',length_intron,genome_intron,gc_content_intron),('misc_feature',length_misc,genome_misc,gc_content_misc),('rrna',length_rrna,genome_rrna,gc_content_rrna),('repeat_region',length_repeats,genome_repeats,gc_content_repeats),('trna',length_trna,genome_trna,gc_content_trna)):
-    print ('{0:<20} {1:<6}({2:<4.1f}%) \t {3:<.2f}'.format(*args))
-
-
 #close the GFF file
 gff_in.close()
     
+
+        
+
+# order the exon sequences
+ordered_exons_sequences = collections.OrderedDict(sorted(exon_sequences.items()))
+    
+for exon, seq in ordered_exons_sequences.items():
+    print(">", exon,"\n",seq)  #print out the exon and the sequences
+
+
+    
+for feature, sequence in feature_sequences.items():
+
+    #calculate the nucleotide composition for each feature
+    (feature_length,cover, feature_comp)=nuc_freq(sequence,base1='C',base2='G',sig_digs=2)
+     
+    print(feature.ljust(20), str(feature_length), "(%1.1f" %cover, "%)", "\t",str(feature_comp)+"%")
+
+
+    
+
+
+
+
+#function for reverse complement
+#function for G+C
+#print/store/build cds for each gene
+#capture the gene name and _ + if _ call reverse function
