@@ -7,12 +7,12 @@ import collections
 
 
 #function goes at the begining. a function to clear up a DNA sequence
-
 def clean_seq(input_seq):
     clean = input_seq.upper()
     clean = clean.replace('N','')
     return clean
 #clean variable is a private and is not accessible outside the function
+
 
 #Function to calculate lenght and composition of sequence
 def nuc_freq(sequence,base1,base2,sig_digs=2):
@@ -35,6 +35,7 @@ def nuc_freq(sequence,base1,base2,sig_digs=2):
     return (length,genome_cover,round(gc_content, sig_digs))
     #return()  #this will return the both variables
 
+    
 #Function to generate complement sequence
 def reverse_compl(dna_seq):
     replacement1=dna_seq.replace('A','t')
@@ -42,8 +43,6 @@ def reverse_compl(dna_seq):
     replacement3=replacement2.replace('C','g')
     replacement4=replacement3.replace('G','c')
     return (replacement4.upper())
-
-
 
 
 
@@ -80,9 +79,10 @@ feature_sequences={}
 #key exon, value=sequence
 exon_sequences={}
 
-#key is gene and value is concatenation of all exon sequences in a gene
+#key is gene name and value= concatenated sequence
 gene_sequences={}
 
+ordered_exon_sequences={}
 
 #Declare a variable
 genome=''
@@ -115,7 +115,7 @@ rrna    = ''
 intron  = ''
 misc    = ''
 repeats = ''
-
+sequence=''
 
 
 for line in gff_in:
@@ -133,52 +133,57 @@ for line in gff_in:
     
     end=int(fields[4])
     #print(type, "\t", start,"\t", end)
-
-
-    #extract feature from the genome
+        #extract feature from the genome
 
     fragment=genome[start-1:end]
 
     fragment=clean_seq(fragment)
 
+    if(fields[6]=='-'):
+        fragment=reverse_compl(fragment)
 
-        
+    #store the big concatenated thing for calculating GC content
     if type in feature_sequences:
         feature_sequences[type] +=fragment
     else:
         feature_sequences[type]=fragment
 
+
+    # extracting gene name and the sequences      
     if type=='CDS':
-        gene_feature=fields[8]
-        gene1=gene_feature.split(';')
-        gene=gene1[0]
-        gene_sequence=genome[start-1:end]
+        breaks=fields
+        attributes=fields[8].split(';')
+        gene_name=attributes[0]
+        #print(gene_name)
+        
+        sequence=genome[start-1:end]
+        sequence=clean_seq(sequence)
 
         if strand=='-':
             #print("Before ")
-            complement_sequence=reverse_compl(gene_sequence)
-            exon_sequences[gene]=complement_sequence
+            complement_sequence=reverse_compl(sequence)
+            exon_sequences[gene_name]=complement_sequence
             #print("After ")
         else:
-            exon_sequences[gene]=gene_sequence
-        
-    #print (clean)
-    #print(gene[0])
-    
+            exon_sequences[gene_name]=sequence
+          
 #close the GFF file
 gff_in.close()
-    
 
-        
 
 # order the exon sequences
-ordered_exons_sequences = collections.OrderedDict(sorted(exon_sequences.items()))
-    
-for exon, seq in ordered_exons_sequences.items():
-    print(">", exon,"\n",seq)  #print out the exon and the sequences
+ordered_exon_sequences = collections.OrderedDict(sorted(exon_sequences.items()))
 
 
-    
+# Concatenate the exons of the same gene
+for gene_features, sequences in ordered_exon_sequences.items():
+	gene_name = gene_features.split(' ')
+	if gene_name[1] in gene_sequences:
+		gene_sequences[gene_name[1]] += sequences
+	else:
+		gene_sequences[gene_name[1]] = sequences
+
+
 for feature, sequence in feature_sequences.items():
 
     #calculate the nucleotide composition for each feature
@@ -187,12 +192,10 @@ for feature, sequence in feature_sequences.items():
     print(feature.ljust(20), str(feature_length), "(%1.1f" %cover, "%)", "\t",str(feature_comp)+"%")
 
 
-    
+
+print('\n'+"printing the genes and their sequences \n")
+for genes, sequences in gene_sequences.items():
+	print(">" + genes)
+	print(sequences + "\n")
 
 
-
-
-#function for reverse complement
-#function for G+C
-#print/store/build cds for each gene
-#capture the gene name and _ + if _ call reverse function
